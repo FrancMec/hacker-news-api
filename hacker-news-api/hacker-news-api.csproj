@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>hacker_news_api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Implementation\**" />
+    <Compile Remove="Interfaces\**" />
+    <Compile Remove="Models\**" />
+    <Content Remove="Implementation\**" />
+    <Content Remove="Interfaces\**" />
+    <Content Remove="Models\**" />
+    <EmbeddedResource Remove="Implementation\**" />
+    <EmbeddedResource Remove="Interfaces\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <None Remove="Implementation\**" />
+    <None Remove="Interfaces\**" />
+    <None Remove="Models\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\hacker-news-wrapper\hacker-news-wrapper.csproj" />
+  </ItemGroup>
+
+</Project>
