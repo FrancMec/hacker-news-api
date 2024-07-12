@@ -37,7 +37,6 @@ namespace hacker_news_wrapper_tests
             };
 
             _mockHttpClientFactory.Setup(factory => factory.CreateClient(It.IsAny<string>())).Returns(_mockHttpClient);
-
             _service = new HackerNewsService(_mockHttpClientFactory.Object, _mockMemoryCache.Object);
         }
 
@@ -48,20 +47,13 @@ namespace hacker_news_wrapper_tests
             var storyIds = new List<int> { 1, 2 };
             var stories = new List<StoryResponse>
             {
-                new StoryResponse { Id = 1, Title = "Story 1", Url = "http://story1.com", Type = "story" }
+                new StoryResponse { Id = 1, Title = "Story 1", Url = "http://story1.com", Type = "story" },
+                new StoryResponse { Id = 2, Title = "Story 2", Url = "http://story2.com", Type = "story" },
             };
-            var mockResponse = new HackerNewsResponse { StatusCode = StatusCodes.Status200OK, Data = stories };
 
             _mockMemoryCache.Setup(x => x.CreateEntry(It.IsAny<string>())).Returns(Mock.Of<ICacheEntry>);
 
-            var client = new HttpClient(_mockHttpMessageHandler.Object)
-            {
-                BaseAddress = new Uri("https://hacker-news.firebaseio.com/")
-            };
-
-            _mockHttpClientFactory.Setup(factory => factory.CreateClient("hackerNews")).Returns(client);
             SetupHttpResponseMessage("/v0/newstories.json", storyIds);
-
 
             foreach (var story in stories)
             {
@@ -73,21 +65,25 @@ namespace hacker_news_wrapper_tests
 
             // Assert
             HackerNewsResponse response = result as HackerNewsResponse;
-            var storiesResponse = response.Data as List<StoryResponse>;
+            var storiesResponse = response.Data as IEnumerable<StoryResponse>;
             Assert.NotNull(result);
             Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Equal(stories.Count, storiesResponse?.Count);
+            Assert.Equal(stories.Count, storiesResponse!.ToList().Count);
+
         }
 
         [Fact, Order(2)]
         public async void GetStoriesAsync_Returns_Stories()
         {
             // Arrange
-            var storyIds = new List<int> { 1, 2, 3 };
+            var storyIds = new List<int> { 1, 2 };
             var stories = new List<StoryResponse>
-        {
-            new StoryResponse { Id = 1, Type = "story", Url = "http://test/story/1" },
-        };
+            {
+                new StoryResponse { Id = 1, Title = "Story 1", Url = "http://story1.com", Type = "story" },
+                new StoryResponse { Id = 2, Title = "Story 2", Url = "http://story2.com", Type = "story" },
+            };
+            
+            _mockMemoryCache.Setup(x => x.CreateEntry(It.IsAny<string>())).Returns(Mock.Of<ICacheEntry>);
 
             SetupHttpResponseMessage("/v0/newstories.json", storyIds);
             foreach (var story in stories)
@@ -99,10 +95,10 @@ namespace hacker_news_wrapper_tests
             // Act
             var result = await _service.GetStoriesAsync(default);
             HackerNewsResponse response = result as HackerNewsResponse;
-            var storiesResponse = response.Data as List<StoryResponse>;
+            var storiesResponse = response.Data as IEnumerable<StoryResponse>;
             // Assert
             Assert.NotNull(storiesResponse);
-            Assert.Equal(1, storiesResponse?.Count);
+            Assert.Equal(2, storiesResponse?.ToList().Count);
             Assert.Contains(1, storiesResponse?.Select(x => x.Id).ToList());
         }
 
@@ -157,7 +153,26 @@ namespace hacker_news_wrapper_tests
             Assert.Contains(2, result);
             Assert.Contains(3, result);
         }
-        
+
+        [Fact, Order(6)]
+        public async void GetStoriesAsync_Returns_Status204NoContent()
+        {
+            // Arrange
+            var storyIds = new List<int>();
+
+            _mockMemoryCache.Setup(x => x.CreateEntry(It.IsAny<string>())).Returns(Mock.Of<ICacheEntry>);
+
+            SetupHttpResponseMessage("/v0/newstories.json", storyIds);
+
+            // Act
+            var result = await _service.GetStoriesAsync(default);
+            HackerNewsResponse response = result as HackerNewsResponse;
+
+            // Assert
+            Assert.Null(response.Data);
+            Assert.Equal(response.StatusCode, StatusCodes.Status204NoContent);
+        }
+
         private void SetupHttpResponseMessage<T>(string requestUri, T content)
         {
             _mockHttpMessageHandler

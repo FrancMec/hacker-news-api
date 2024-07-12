@@ -27,6 +27,7 @@
         /// <returns>HackerNewsResponse</returns>
         public async Task<HackerNewsResponse> GetStoriesAsync(CancellationToken cancellationToken)
         {
+
             if (!_cache.TryGetValue(ServiceConstants.STORIES_CACHEKEY, out HackerNewsResponse response))
             {
                 try
@@ -38,19 +39,21 @@
 
                     if (storyIds?.Any() == true)
                     {
-                       
-                        Parallel.ForEach(storyIds, new ParallelOptions { CancellationToken = cancellationToken }, async (id, state) =>
+                        var tasks = storyIds.Select(async id =>
                         {
-                            var story = GetStoryByIdAsync(id, cancellationToken).Result;
-
-                            if (story is not null && story.Type.Equals("story", StringComparison.CurrentCultureIgnoreCase) && !string.IsNullOrWhiteSpace(story.Url))
+                            var story = await GetStoryByIdAsync(id, cancellationToken);
+                            if (story != null && story.Type.Equals("story", StringComparison.CurrentCultureIgnoreCase) && !string.IsNullOrWhiteSpace(story.Url))
                             {
-                                stories.Add(story);
+                                return story;
                             }
+                            return null;
                         });
 
+                        var results = await Task.WhenAll(tasks);
+                        stories.AddRange(results.Where(story => story != null));
+
                         response.StatusCode = StatusCodes.Status200OK;
-                        response.Data = stories;
+                        response.Data = stories.ToList().Take(200);
                         CacheResponse(response, ServiceConstants.STORIES_CACHEKEY);
 
                     }
@@ -76,10 +79,10 @@
         /// <param name="id">The storyId</param>
         /// <param name="cancellationToken">The cancellationToken.</param>
         /// <returns>Story object.</returns>
-        public Task<StoryResponse> GetStoryByIdAsync(int id, CancellationToken cancellationToken)
+        public async Task<StoryResponse> GetStoryByIdAsync(int id, CancellationToken cancellationToken)
         {
 
-            var story =  _client.GetFromJsonAsync<StoryResponse>($"/v0/item/{id}.json", cancellationToken);
+            var story = await _client.GetFromJsonAsync<StoryResponse>($"/v0/item/{id}.json", cancellationToken);
             return story;
         }
 
