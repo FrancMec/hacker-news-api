@@ -78,7 +78,7 @@ namespace hacker_news_wrapper_tests
         public async void GetStoriesAsync_Returns_Stories()
         {
             // Arrange
-            var storyIds = new int[] { 1, 2 };
+            var storyIds = new List<int> { 1, 2 };
             var stories = new List<StoryResponse>
             {
                 new StoryResponse { Id = 1, Title = "Story 1", Url = "http://story1.com", Type = "story" },
