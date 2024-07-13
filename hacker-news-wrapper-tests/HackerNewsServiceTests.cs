@@ -25,6 +25,8 @@ namespace hacker_news_wrapper_tests
         private readonly HackerNewsService _service;
         private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
         private readonly HttpClient _mockHttpClient;
+        private const string GET_STORY_IDS_ENDPOINT = "/v0/newstories.json?orderBy=%22$priority%22&limitToFirst=200";
+        private const string GET_STORY_BY_ID_ENDPOINT = "/v0/item/{0}.json";
 
         public HackerNewsServiceTests()
         {
@@ -53,11 +55,11 @@ namespace hacker_news_wrapper_tests
 
             _mockMemoryCache.Setup(x => x.CreateEntry(It.IsAny<string>())).Returns(Mock.Of<ICacheEntry>);
 
-            SetupHttpResponseMessage("/v0/newstories.json", storyIds);
+            SetupHttpResponseMessage(GET_STORY_IDS_ENDPOINT, storyIds);
 
             foreach (var story in stories)
             {
-                SetupHttpResponseMessage($"/v0/item/{story.Id}.json", story);
+                SetupHttpResponseMessage(string.Format(GET_STORY_BY_ID_ENDPOINT, story.Id), story);
             }
 
             // Act
@@ -76,19 +78,19 @@ namespace hacker_news_wrapper_tests
         public async void GetStoriesAsync_Returns_Stories()
         {
             // Arrange
-            var storyIds = new List<int> { 1, 2 };
+            var storyIds = new int[] { 1, 2 };
             var stories = new List<StoryResponse>
             {
                 new StoryResponse { Id = 1, Title = "Story 1", Url = "http://story1.com", Type = "story" },
                 new StoryResponse { Id = 2, Title = "Story 2", Url = "http://story2.com", Type = "story" },
             };
-            
+
             _mockMemoryCache.Setup(x => x.CreateEntry(It.IsAny<string>())).Returns(Mock.Of<ICacheEntry>);
 
-            SetupHttpResponseMessage("/v0/newstories.json", storyIds);
+            SetupHttpResponseMessage(GET_STORY_IDS_ENDPOINT, storyIds);
             foreach (var story in stories)
             {
-                SetupHttpResponseMessage($"/v0/item/{story.Id}.json", story);
+                SetupHttpResponseMessage(string.Format(GET_STORY_BY_ID_ENDPOINT, story.Id), story);
             }
 
 
@@ -123,7 +125,7 @@ namespace hacker_news_wrapper_tests
             // Arrange
             var story = new StoryResponse { Id = 1, Type = "story", Url = "http://test/story/1" };
 
-            SetupHttpResponseMessage($"/v0/item/{story.Id}.json", story);
+            SetupHttpResponseMessage(string.Format(GET_STORY_BY_ID_ENDPOINT, story.Id), story);
 
 
             // Act
@@ -140,7 +142,7 @@ namespace hacker_news_wrapper_tests
             // Arrange
             var storyIds = new List<int> { 1, 2, 3 };
 
-            SetupHttpResponseMessage("/v0/newstories.json", storyIds);
+            SetupHttpResponseMessage(GET_STORY_IDS_ENDPOINT, storyIds);
 
 
             // Act
@@ -162,7 +164,7 @@ namespace hacker_news_wrapper_tests
 
             _mockMemoryCache.Setup(x => x.CreateEntry(It.IsAny<string>())).Returns(Mock.Of<ICacheEntry>);
 
-            SetupHttpResponseMessage("/v0/newstories.json", storyIds);
+            SetupHttpResponseMessage(GET_STORY_IDS_ENDPOINT, storyIds);
 
             // Act
             var result = await _service.GetStoriesAsync(default);

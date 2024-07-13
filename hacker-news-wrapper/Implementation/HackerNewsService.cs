@@ -53,7 +53,7 @@
                         stories.AddRange(results.Where(story => story != null));
 
                         response.StatusCode = StatusCodes.Status200OK;
-                        response.Data = stories.ToList().Take(200);
+                        response.Data = stories;
                         CacheResponse(response, ServiceConstants.STORIES_CACHEKEY);
 
                     }
@@ -93,7 +93,7 @@
         /// <returns>list of int ids.</returns>
         public async Task<List<int>> GetStoryIdsAsync(CancellationToken cancellationToken)
         {
-            var storyIds = await _client.GetFromJsonAsync<List<int>>($"/v0/newstories.json", cancellationToken);
+            var storyIds = await _client.GetFromJsonAsync<List<int>>($"/v0/newstories.json?orderBy=%22$priority%22&limitToFirst=200", cancellationToken);
             return storyIds;
         }
 
